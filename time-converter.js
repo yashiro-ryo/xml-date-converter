@@ -1,49 +1,141 @@
 const xml2js = require("xml2js");
 const fs = require('fs');
 
-const FILE_NAME = '5/05.xml'
-const START_HOUR = 0
-const START_MIN = 12
-const START_SEC = 0
+//
+// config
+//
 
-function main() {
-  // xmlファイル読み込み
-  let xml = fs.readFileSync(FILE_NAME);
+const ALL_SUBTITLES_FILENAME = '5/05.xml'
+const PART_A_SUBTITLE_FILENAME = '5/05A.xml'
+const PART_A_START_AT = 0
+const PART_B_SUBTITLE_FILENAME = '5/05B.xml'
+const PART_B_START_AT = getMilliSec(0, 20, 55)
+const PART_C_SUBTITLE_FILENAME = '5/05C.xml'
+const PART_C_START_AT = getMilliSec(0, 39, 38)
+const PART_D_SUBTITLE_FILENAME = '5/05D.xml'
+const PART_D_START_AT = getMilliSec(0, 59, 50)
+const DIST_FILENAME = '5/05_dist.xml'
 
-  // XMLパース
-  xml2js.parseString(xml, parseStringCb);
-}
+//
+// main
+//
 
-function parseStringCb(error, result) {
-  if (error) {
-    console.log(error)
-  } else {
-    onSuccess(result)
-  }
-}
+async function main() {
+  // ビデオ全体の字幕ファイル
+  let allSubtitles = fs.readFileSync(ALL_SUBTITLES_FILENAME)
+  let partASubtitle = fs.readFileSync(PART_A_SUBTITLE_FILENAME)
+  let partBSubtitle = fs.readFileSync(PART_B_SUBTITLE_FILENAME)
+  let partCSubtitle = fs.readFileSync(PART_C_SUBTITLE_FILENAME)
+  let partDSubtitle = fs.readFileSync(PART_D_SUBTITLE_FILENAME)
 
-function onSuccess(result) {
-  // 変換後のオブジェクトを出力
-  const texts = result.tt.body[0].div[0].p
-  const startMillseconds = (START_HOUR * 3600 + START_MIN * 60 + START_SEC) * 1000
+  let subtitles = []
 
-  console.log(texts)
+  // Aパートの字幕データを取得する
+  const convertPartASubtitile = new Promise((resolve, reject) => {
+    xml2js.parseString(partASubtitle, (error, result) => {
+      if (error) {
+        reject(error)
+      }
 
-  // 文字列の時刻 -> ミリ秒 -> 動画のスタート位置を加算 -> 文字列の時刻に戻す
-  texts.forEach((value) => {
-    value.$.begin = millisecondsToTimeString(timeStringToMilliseconds(value.$.begin) + startMillseconds)
-    value.$.end = millisecondsToTimeString(timeStringToMilliseconds(value.$.end) + startMillseconds)
+      const texts = result.tt.body[0].div[0].p
+
+      // 文字列の時刻 -> ミリ秒 -> 動画のスタート位置を加算 -> 文字列の時刻に戻す
+      texts.forEach((value) => {
+        value.$.begin = millisecondsToTimeString(timeStringToMilliseconds(value.$.begin) + PART_A_START_AT)
+        value.$.end = millisecondsToTimeString(timeStringToMilliseconds(value.$.end) + PART_A_START_AT)
+      })
+
+      resolve(texts)
+    })
   })
 
-  console.log(texts)
+  // Bパートの字幕データを取得する
+  const convertPartBSubtitile = new Promise((resolve, reject) => {
+    xml2js.parseString(partBSubtitle, (error, result) => {
+      if (error) {
+        reject(error)
+      }
 
-  // JSONをXMLに戻す
-  const builder = new xml2js.Builder();
-  const updatedXml = builder.buildObject(result);
+      const texts = result.tt.body[0].div[0].p
 
-  // 更新されたXMLをファイルに書き込む
-  fs.writeFile(`converted-${FILE_NAME}`, updatedXml, (err) =>
-    console.error(err));
+      // 文字列の時刻 -> ミリ秒 -> 動画のスタート位置を加算 -> 文字列の時刻に戻す
+      texts.forEach((value) => {
+        value.$.begin = millisecondsToTimeString(timeStringToMilliseconds(value.$.begin) + PART_B_START_AT)
+        value.$.end = millisecondsToTimeString(timeStringToMilliseconds(value.$.end) + PART_B_START_AT)
+      })
+
+      resolve(texts)
+    })
+  })
+
+  // Bパートの字幕データを取得する
+  const convertPartCSubtitile = new Promise((resolve, reject) => {
+    xml2js.parseString(partCSubtitle, (error, result) => {
+      if (error) {
+        reject(error)
+      }
+
+      const texts = result.tt.body[0].div[0].p
+
+      // 文字列の時刻 -> ミリ秒 -> 動画のスタート位置を加算 -> 文字列の時刻に戻す
+      texts.forEach((value) => {
+        value.$.begin = millisecondsToTimeString(timeStringToMilliseconds(value.$.begin) + PART_C_START_AT)
+        value.$.end = millisecondsToTimeString(timeStringToMilliseconds(value.$.end) + PART_C_START_AT)
+      })
+
+      resolve(texts)
+    })
+  })
+
+  // Bパートの字幕データを取得する
+  const convertPartDSubtitile = new Promise((resolve, reject) => {
+    xml2js.parseString(partDSubtitle, (error, result) => {
+      if (error) {
+        reject(error)
+      }
+
+      const texts = result.tt.body[0].div[0].p
+
+      // 文字列の時刻 -> ミリ秒 -> 動画のスタート位置を加算 -> 文字列の時刻に戻す
+      texts.forEach((value) => {
+        value.$.begin = millisecondsToTimeString(timeStringToMilliseconds(value.$.begin) + PART_D_START_AT)
+        value.$.end = millisecondsToTimeString(timeStringToMilliseconds(value.$.end) + PART_D_START_AT)
+      })
+
+      resolve(texts)
+    })
+  })
+
+  // 時刻を一括編集する
+  await convertPartASubtitile.then((res) => {
+    subtitles = subtitles.concat(res)
+    return convertPartBSubtitile
+  }).then((res) => {
+    subtitles = subtitles.concat(res)
+    return convertPartCSubtitile
+  }).then((res) => {
+    subtitles = subtitles.concat(res)
+    return convertPartDSubtitile
+  }).then((res) => {
+    subtitles = subtitles.concat(res)
+  })
+
+  xml2js.parseString(allSubtitles, (error, result) => {
+    if (error) {
+      console.error(error)
+      return
+    }
+
+    result.tt.body[0].div[0].p = subtitles
+
+    // JSONをXMLに戻す
+    const builder = new xml2js.Builder();
+    const updatedXml = builder.buildObject(result);
+
+    // 更新されたXMLをファイルに書き込む
+    fs.writeFile(DIST_FILENAME, updatedXml, (err) =>
+      console.error(err));
+  })
 }
 
 main()
@@ -51,6 +143,10 @@ main()
 //
 // utils
 //
+
+function getMilliSec(hour, min, sec) {
+  return (hour * 3600 + min * 60 + sec) * 1000
+}
 
 // 時間の文字列をミリ秒に変換する関数
 function timeStringToMilliseconds(timeString) {
